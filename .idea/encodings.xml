@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding" defaultCharsetForPropertiesFiles="UTF-8">
+    <file url="file://$PROJECT_DIR$/src/main/java/cn/zrf/shirodemo/dao/PermissionDao.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/cn/zrf/shirodemo/dao/RoleDao.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/cn/zrf/shirodemo/service/shiro/FilterChainDefinitionMapFactory.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/cn/zrf/shirodemo/service/shiro/ShiroAuthorizingRealm.java" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/src/main/java/cn/zrf/shirodemo/shiro/ShiroConfiguration.java" charset="GBK" />
+    <file url="PROJECT" charset="UTF-8" />
+  </component>
+</project>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!-- shiro的核心组件：securityManager -->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <!-- 配置缓存 -->
+        <property name="cacheManager" ref="cacheManager" />
+        <!--这个属性配置一定要配置在realms之前-->
+        <property name="authenticator" ref="authenticator"/>
+        <!--指定一个realm的情况-->
+        <!--<property name="realm" ref="shiroRealm" />-->
+        <!--如果要配置多个realm这要指定realms-->
+        <property name="realms">
+            <list>
+                <ref bean="shiroRealm"/>
+                <ref bean="qQRealm"/>
+                <ref bean="weixinRealm"/>
+            </list>
+        </property>
+        <!--shiro的会话管理器-->
+        <property name="sessionManager" ref="sessionManager"/>
+        <!--设置记住我的最大期限，单位秒-->
+       <!-- <property name="rememberMeManager.cookie.maxAge" value="604800"/>-->
+        <!--或者通过外部bean设置-->
+        <property name="rememberMeManager" ref="rememberMeManager"/>
+    </bean>
+
+    <bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+        <!--设置全局session失效时间，默认30分钟-->
+        <property name="globalSessionTimeout" value="3000000"/>
+        <!--session 会话的一系列配置都是在这里配置。。。-->
+    </bean>
+
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"/>
+    </bean>
+
+    <bean id="rememberMeManager" class="org.apache.shiro.web.mgt.CookieRememberMeManager">
+        <property name="cookie" ref="simpleCookie"/>
+    </bean>
+
+    <bean id="simpleCookie" class="org.apache.shiro.web.servlet.SimpleCookie">
+        <constructor-arg value="rememberMe"/>
+        <property name="httpOnly" value="true"/>
+        <!--设置记住我的最大期限-->
+        <property name="maxAge" value="604800"/>
+    </bean>
+
+    <!--自定义realm-->
+    <bean id="shiroRealm" class="cn.zrf.shirodemo.service.shiro.ShiroAuthorizingRealm">
+        <property name="credentialsMatcher">
+            <!--<bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+                <property name="hashAlgorithmName" value="MD5"/>
+                <property name="hashIterations" value="1024"/>
+                <property name="storedCredentialsHexEncoded" value="true"/>
+            </bean>-->
+            <bean class="cn.zrf.shirodemo.shiro.MyCredentialsMatcher"/>
+        </property>
+    </bean>
+
+    <bean id="qQRealm" class="cn.zrf.shirodemo.service.shiro.QQRealm">
+        <property name="credentialsMatcher">
+            <bean class="cn.zrf.shirodemo.shiro.MyCredentialsMatcher1"/>
+        </property>
+    </bean>
+
+    <bean id="weixinRealm" class="cn.zrf.shirodemo.service.shiro.WeixinRealm">
+        <property name="credentialsMatcher">
+            <bean class="cn.zrf.shirodemo.shiro.MyCredentialsMatcher2"/>
+        </property>
+    </bean>
+
+    <!--指定Authenticator的实现类-->
+    <bean id="authenticator" class="org.apache.shiro.authc.pam.ModularRealmAuthenticator">
+        <property name="authenticationStrategy">
+            <!--使用AllSuccessfulStrategy策略-->
+            <bean class="org.apache.shiro.authc.pam.AllSuccessfulStrategy"/>
+        </property>
+        <!--也可以在这里指定多个realm，但是一般情况下不放在这-->
+        <!--<property name="realms">
+            <list>
+                <ref bean="shiroRealm"/>
+                <ref bean="qQRealm"/>
+                <ref bean="weixinRealm"/>
+            </list>
+        </property>-->
+    </bean>
+
+    <!--shiro的拦截规则-->
+    <!--需要我们注意的知识点，这个bean的id值web.xml配置文件中的shiroFiler
+    拦截器的名字-->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager" />
+        <!--登录的页面，没有登录的情况下需要登录认证后才能访问的页面-->
+        <property name="loginUrl" value="/login.html" />
+        <!-- 登录页面，filterChainDefinitions除没有指定的页面，或者指定权限是anon以外的所有页面，在没登录时候访问都会自动跳转到这里   -->
+        <property name="successUrl" value="/admin/main.html" />  <!-- 登录成功后的页面 -->
+        <property name="unauthorizedUrl"  value="/unauthorized.html" />  <!-- 登录后访问没有权限的页面后跳转的页面，若使用注解则这个配置无效 -->
+        <!--<property name="filterChainDefinitionMap" ref="filterChainDefinitionMap"/>-->
+        <!--设置拦截规则的属性，拦截范围必须由小到大
+        URL地址=拦截规则 ：anon:匿名-->
+        <property name="filterChainDefinitions">
+        <value>
+            /login.html = anon
+            /logout.html = logout  <!--登出，默认跳转到根路径-->
+            /admin/userlist.html = perms[userlist] <!--只有userlist权限才能访问-->
+            /admin/adduser.html = perms[adduser] <!--只有adduser权限才能访问-->
+            /admin/main.html = user
+            /admin/** = authc     <!-- authc表示要登录后，才能访问 -->
+            /**= anon  <!-- anon表示匿名访问，就是不用登录 -->
+        </value>
+        <!--注意的知识点：规则是有顺序的,从上到下，拦截范围必须是从小到大-->
+    </property>
+    </bean>
+    <bean id="filterChainDefinitionMap" factory-bean="filterChainDefinitionMapFactory" factory-method="getfilterChainDefinitionMap"/>
+    <bean id="filterChainDefinitionMapFactory" class="cn.zrf.shirodemo.service.shiro.FilterChainDefinitionMapFactory"/>
+</beans>
